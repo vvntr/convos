@@ -8,6 +8,7 @@ import ChatMessagesStatusLine from '../components/ChatMessagesStatusLine.svelte'
 import ChatParticipants from '../components/ChatParticipants.svelte';
 import DragAndDrop from '../js/DragAndDrop';
 import Icon from '../components/Icon.svelte';
+import RTCConnection from '../components/RTCConnection.svelte';
 import Scrollspy from '../js/Scrollspy';
 import Time from '../js/Time';
 import {afterUpdate, getContext, onDestroy, onMount} from 'svelte';
@@ -149,6 +150,15 @@ async function setDialogFromUser(user) {
   {/if}
   <a href="#activeMenu:{dialog.connection_id ? 'settings' : 'nav'}" class="btn has-tooltip can-toggle" class:is-toggled="{$route.activeMenu == 'settings'}" data-tooltip="{l('Settings')}"><Icon name="tools"/><Icon name="times"/></a>
 </ChatHeader>
+
+<div class="rtc-conversations">
+  {#if $rtc.localStream.id}
+    <RTCConnection conn="{rtc}" dialog="{dialog}" rtc="{rtc}"/>
+    {#each $rtc.peerConnections({remoteStream: true}) as conn}
+      <RTCConnection conn="{conn}" dialog="{dialog}" rtc="{rtc}"/>
+    {/each}
+  {/if}
+</div>
 
 <main class="main has-chat" bind:this="{mainEl}"  on:scroll="{scrollspy.onScroll}">
   <ChatMessagesContainer dialog="{dialog}" bind:messagesHeight="{messagesHeight}">

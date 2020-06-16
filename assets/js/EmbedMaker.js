@@ -15,6 +15,17 @@ export default class EmbedMaker extends Reactive {
     this.prop('ro', 'embeds', {});
   }
 
+  alert(message, heading = 'Alert') {
+    const w = document.createElement('div');
+    const h = document.createElement('h2');
+    const p = document.createElement('p');
+    [h, p].forEach(el => w.appendChild(el));
+    h.innerText = heading;
+    p.innerText = message;
+    w.className = 'alert';
+    this.showMediaBig(w);
+  }
+
   render(messageEl, urls) {
     if (!this.expandUrlToMedia) return;
 

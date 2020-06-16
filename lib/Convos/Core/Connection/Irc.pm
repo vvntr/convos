@@ -49,7 +49,7 @@ sub rtc_p {
 
 sub _rtc_signal_p {
   my ($self, $dialog, $msg) = @_;
-  return Mojo::Promise->reject('Missing property: target.') unless $msg->{target};
+  return Mojo::Promise->reject('Missing property: nick.') unless $msg->{nick};
 
   my @p;
   my $write = sub {
@@ -60,7 +60,7 @@ sub _rtc_signal_p {
     my $n = @chunks - 1;
     push @p,
       $self->_write_p(sprintf "NOTICE %s %s\r\n",
-      $msg->{target}, $self->_make_ctcp_string(RTCZ => $type, "$_/$n", $dialog->name, $chunks[$_]))
+      $msg->{nick}, $self->_make_ctcp_string(RTCZ => $type, "$_/$n", $dialog->name, $chunks[$_]))
       for 0 .. $n;
   };
 

@@ -19,4 +19,13 @@
     max-height: 80%;
     max-width: 90%;
   }
+
+  .alert {
+    background: var(--sidebar-left-bg);
+    color: var(--sidebar-left-text);
+    padding: var(--gutter);
+    border: var(--sidebar-left-border);
+    border-radius: 1rem;
+    max-width: 20rem;
+  }
 }

@@ -34,6 +34,10 @@ body.with-grid::after {
   }
 }
 
+.fake-padding-bottom {
+  height: var(--gutter);
+}
+
 .text-center {
   text-align: center;
 }

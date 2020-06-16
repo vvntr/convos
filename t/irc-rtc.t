@@ -39,8 +39,8 @@ is $sent, "NOTICE superwoman :\x01RTCZ HANGUP\x01", 'rtcz';
 
 note 'signalling #convos';
 @msg{qw(dialog_id event ice)} = ('#convos', 'signal', "0\r\n-\r\n" x 200);
-$connection->rtc_p({%msg})->$wait_reject('Missing property: target.');
-$msg{target} = 'superwoman';
+$connection->rtc_p({%msg})->$wait_reject('Missing property: nick.');
+$msg{nick} = 'superwoman';
 t::Helper->irc_server->once(message => sub { $sent = pop });
 $connection->rtc_p({%msg})->$wait_success('event ice #convos');
 like $sent, qr{NOTICE superwoman :\x01RTCZ ICE 0/0 \#convos \S+==\x01}, 'rtcz ice #convos';
@@ -48,7 +48,7 @@ like $sent, qr{NOTICE superwoman :\x01RTCZ ICE 0/0 \#convos \S+==\x01}, 'rtcz ic
 note 'signalling superwoman';
 delete $msg{ice};
 @msg{qw(dialog_id event answer)} = ('superwoman', 'signal', "0\r\n-\r\n" x 200);
-$msg{target} = 'superwoman';
+$msg{nick} = 'superwoman';
 t::Helper->irc_server->once(message => sub { $sent = pop });
 $connection->rtc_p({%msg})->$wait_success('event answer superwoman');
 like $sent, qr{NOTICE superwoman :\x01RTCZ ANS 0/0 superwoman \S+==\x01}, 'rtcz answer superwoman';

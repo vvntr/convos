@@ -21,13 +21,13 @@ my %msg   = (
   connection_id => 'irc-localhost',
   dialog_id     => '#ct_web_rtc',
   event         => 'signal',
-  target        => $t_joe->{nick},
+  nick          => $t_joe->{nick},
   offer         => $offer,
 );
 $t_jane->send_ok({json => {method => 'rtc', %msg}});
 wait_for_message_ok($t_jane, qr{"event":"rtc"});
 
-for my $key (qw(target dialog_id event connection_id)) {
+for my $key (qw(nick dialog_id event connection_id)) {
   delete $msg{$key};
   my $msg
     = $key eq 'dialog_id'     ? 'Dialog not found.'
@@ -197,7 +197,6 @@ a=rtpmap:0 PCMU/8000
 a=rtpmap:8 PCMA/8000
 a=rtpmap:101 telephone-event/8000/1
 a=setup:actpass
-a=ssrc:252769094 cname:{a1933fc7-ba84-fe42-80c6-536c60bd34e0}
 m=video 9 UDP/TLS/RTP/SAVPF 120 121 126 97
 c=IN IP4 0.0.0.0
 a=sendrecv

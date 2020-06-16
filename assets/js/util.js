@@ -2,6 +2,7 @@
  * util holds a collection of utility functions.
  *
  * @module util
+ * @exports bytes
  * @exports camelize
  * @exports clone
  * @exports closestEl
@@ -24,6 +25,26 @@
  */
 const goldenRatio = 0.618033988749;
 
+const k = 1000;
+const M = k * 1000;
+const G = M * 1000;
+
+/*
+ * humanBytes() will take bytes and return kilo, mega or gigabytes.
+ *
+ * @param {Number} n Number of bytes
+ * @returns {String} Example: 2.4k, 3.4M or 8G
+ */
+export function bytes(n) {
+  const h = n < k ? [n, '']
+          : n < M ? [n / k, 'k']
+          : n < G ? [n / M, 'M']
+          :         [n / G, 'G'];
+
+  const v = String(Math.round(h[0] * 10) / 10);
+  return (v.match(/\./) ? v : v + '.0') + h[1];
+}
+
 /**
  * Used to take snake case and turn it into camel case.
  *
@@ -34,6 +55,12 @@ export function camelize(str) {
   return str.replace(/_(\w)/g, (a, b) => b.toUpperCase());
 }
 
+/*
+ * clone() will deep clone a plain data structure.
+ *
+ * @param {Any} any String, Number, Array or Object.
+ * @returns {Any} any String, Number, Array or Object.
+ */
 export function clone(any) {
   return JSON.parse(JSON.stringify(any));
 }
@@ -341,6 +368,16 @@ export function str2color(str, nColors = 100) {
  */
 export function tagNameIs(el, tagName) {
   return el && el.tagName && el.tagName.toLowerCase() === tagName || false;
+}
+
+/**
+ * ucFirst() will return a string where the first character is upper cased.
+ *
+ * @param {String} Any string
+ * @returns {String} The first character will be upper cased
+ */
+export function ucFirst(str) {
+  return str.substring(0, 1).toUpperCase() + str.substring(1);
 }
 
 /**

@@ -8,7 +8,8 @@ export default class WebRTCPeerConnection extends Reactive {
     this.prop('ro', 'id', uuidv4());
     this.prop('ro', 'localStream', params.localStream);
     this.prop('ro', 'peerConfig', params.peerConfig);
-    this.prop('ro', 'target', params.target);
+    this.prop('ro', 'nick', params.nick);
+    this.prop('ro', 'videoStream', () => this.remoteStream || null);
     this.prop('rw', 'info', this._infoTemplate());
     this.prop('rw', 'remoteStream', null);
     this.prop('rw', 'role', '');
@@ -22,7 +23,7 @@ export default class WebRTCPeerConnection extends Reactive {
     const pc = this._pc();
     const sdp = await pc.createOffer();
     pc.setLocalDescription(sdp);
-    this.emit('signal', {offer: sdp.sdp, target: this.target});
+    this.emit('signal', {offer: sdp.sdp, nick: this.nick});
     this._processSignalQueue();
   }
 
@@ -49,12 +50,16 @@ export default class WebRTCPeerConnection extends Reactive {
       }
       else if (item.type == 'inbound-rtp') {
         const type = item.kind || item.mediaType || 'unknown';
-        ['bitrateMean', 'discardedPackets', 'framerateMean', 'framesDecoded', 'jitter', 'nackCount', 'packetsLost', 'packetsReceived']
+        ['discardedPackets', 'framesDecoded', 'jitter', 'packetsLost', 'packetsReceived']
+          .forEach(k => { info[type][k] = item[k] || 0 });
+        ['bitrateMean', 'framerateMean', 'nackCount']
           .forEach(k => { info[type].inbound[k] = item[k] || 0 });
       }
       else if (item.type == 'outbound-rtp') {
         const type = item.kind || item.mediaType || 'unknown';
-        ['bitrateMean', 'droppedFrames', 'framerateMean', 'framesEncoded', 'nackCount', 'packetsSent']
+        ['droppedFrames', 'framesEncoded', 'packetsSent']
+          .forEach(k => { info[type][k] = item[k] || 0 });
+        ['bitrateMean', 'framerateMean', 'nackCount']
           .forEach(k => { info[type].outbound[k] = item[k] || 0 });
       }
     });
@@ -66,6 +71,23 @@ export default class WebRTCPeerConnection extends Reactive {
     const queueMethod = msg.offer ? 'unshift' : 'push'; // process "SDP offer" before "ice candidate"
     this.signalQueue[queueMethod](msg);
     this._processSignalQueue();
+  }
+
+  updateTracks() {
+    const tracks = {};
+    this.localStream.getTracks().forEach(track => {
+      tracks[track.kind] = track;
+    });
+
+    this.pc.getSenders().forEach(sender => {
+      const senderTrack = sender.track;
+      if (!senderTrack) return;
+      const localTrack = tracks[senderTrack.kind];
+      delete tracks[senderTrack.kind];
+      return localTrack ? sender.replaceTrack(localTrack) : this.cp.removeTrack(senderTrack);
+    });
+
+    Object.keys(tracks).forEach(kind => this.pc.addTrack(tracks[kind]));
   }
 
   _infoTemplate() {
@@ -84,7 +106,7 @@ export default class WebRTCPeerConnection extends Reactive {
 
   _onIceCandidate({candidate}) {
     if (!candidate) return;
-    this.emit('signal', {ice: candidate.candidate, sdpMid: candidate.sdpMid, sdpMLineIndex: candidate.sdpMLineIndex, target: this.target});
+    this.emit('signal', {ice: candidate.candidate, sdpMid: candidate.sdpMid, sdpMLineIndex: candidate.sdpMLineIndex, nick: this.nick});
   }
 
   _onTrack({streams, track}) {
@@ -97,8 +119,8 @@ export default class WebRTCPeerConnection extends Reactive {
   _pc() {
     if (this.pc) return this.pc;
 
-    const pc = new RTCPeerConnection(this.peerConfig);
-    this.localStream.getTracks().forEach(track => pc.addTrack(track, this.localStream));
+    const pc = this.pc = new RTCPeerConnection(this.peerConfig);
+    this.updateTracks();
     pc.onicecandidate = (e) => this._onIceCandidate(e);
     pc.oniceconnectionstatechange = (e) => this.refreshInfo();
     pc.onicegatheringstatechange = (e) => this.refreshInfo();
@@ -106,7 +128,7 @@ export default class WebRTCPeerConnection extends Reactive {
     pc.onsignalingstatechange = (e) => this.refreshInfo();
     pc.ontrack = (e) => this._onTrack(e);
 
-    return (this.pc = pc);
+    return pc;
   }
 
   _processSignalQueue() {
@@ -149,13 +171,13 @@ export default class WebRTCPeerConnection extends Reactive {
     pc.setRemoteDescription(new RTCSessionDescription({sdp: msg.offer, type: 'offer'}));
     pc.createAnswer().then(sdp => {
       pc.setLocalDescription(sdp);
-      this.emit('signal', {answer: sdp.sdp, target: this.target});
+      this.emit('signal', {answer: sdp.sdp, nick: this.nick});
     });
 
     return true;
   }
 
   _throwifStarted() {
-    if (this.role) throw '[WebRTCPeerConnection] Already started ' + this.target + ' as ' + this.role;
+    if (this.role) throw '[WebRTCPeerConnection] Already started ' + this.nick + ' as ' + this.role;
   }
 }
