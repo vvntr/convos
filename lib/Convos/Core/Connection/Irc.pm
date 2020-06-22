@@ -220,7 +220,11 @@ sub _irc_event_err_nicknameinuse {
 
 sub _irc_event_err_unknowncommand {
   my ($self, $msg) = @_;
-  $self->_notice("Unknown command: $msg->{params}[1]", type => 'error');
+  my @params  = @{$msg->{params}};
+  my $command = shift @params;
+  my $reason  = join ' ', @params;
+  return $self->_notice("Unknown command: $command ($reason)", type => 'error') if $reason;
+  return $self->_notice("Unknown command: $command",           type => 'error');
 }
 
 sub _irc_event_error {
