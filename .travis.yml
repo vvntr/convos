@@ -9,7 +9,6 @@ matrix:
 
 env:
   global:
-   - HARNESS_OPTIONS=j4
    - TEST_BOT=1
    - TEST_POD=1
 
