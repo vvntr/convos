@@ -10,7 +10,7 @@ matrix:
 env:
   global:
    - "CONVOS_DEBUG=1"
-   - "HARNESS_OPTIONS=v"
+   - "HARNESS_VERBOSE=1"
    - "TEST_BOT=1"
    - "TEST_POD=1"
 
