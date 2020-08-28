@@ -23,7 +23,6 @@ export default class User extends Reactive {
     this.prop('rw', 'forced_connection', false);
     this.prop('rw', 'default_connection', 'irc://chat.freenode.net:6697/%23convos');
     this.prop('rw', 'highlightKeywords', []);
-    this.prop('rw', 'rtc', {});
     this.prop('rw', 'status', 'pending');
 
     this.socket = params.socket || getSocket('/events');
@@ -105,7 +104,6 @@ export default class User extends Reactive {
       forced_connection: data.forced_connection || false,
       highlightKeywords: data.highlight_keywords || [],
       roles: true,
-      rtc: data.rtc || {},
       status: res.errors ? 'error' : 'success',
     });
   }

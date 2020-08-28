@@ -2,11 +2,11 @@ package Convos::Core::Connection::Irc;
 use Mojo::Base 'Convos::Core::Connection';
 
 no warnings 'utf8';
-use Convos::Util qw($CHANNEL_RE DEBUG sdp_decode sdp_encode);
+use Convos::Util qw($CHANNEL_RE DEBUG);
 use IRC::Utils ();
 use Mojo::JSON qw(false true);
 use Mojo::Parameters;
-use Mojo::Util qw(b64_decode b64_encode gzip gunzip term_escape trim);
+use Mojo::Util qw(term_escape trim);
 use Parse::IRC ();
 use Time::HiRes 'time';
 
@@ -31,54 +31,6 @@ sub disconnect_p {
   $self->{disconnecting} = 1;    # Prevent getting queued
   $self->_write("QUIT :https://convos.chat", sub { $self->_stream_remove($p) });
   return $p;
-}
-
-sub rtc_p {
-  my ($self, $msg) = @_;
-  return Mojo::Promise->reject('Missing property: event.') unless $msg->{event};
-  return Mojo::Promise->reject('Dialog not found.')
-    unless $msg->{dialog_id} and my $dialog = $self->get_dialog($msg->{dialog_id});
-
-  # "signal" messages should only be sent to a single user
-  return $self->_rtc_signal_p($dialog, $msg) if $msg->{event} eq 'signal';
-
-  # Every other message (call, hangup) should be broadcast to all other users
-  return $self->_write_p(sprintf "NOTICE %s %s\r\n",
-    $dialog->name, $self->_make_ctcp_string(RTCZ => uc $msg->{event}));
-}
-
-sub _rtc_signal_p {
-  my ($self, $dialog, $msg) = @_;
-  return Mojo::Promise->reject('Missing property: target.') unless $msg->{target};
-
-  my @p;
-  my $write = sub {
-    my ($type, $payload) = @_;
-    my @chunks;
-    $payload = b64_encode gzip($payload), '';
-    push @chunks, substr $payload, 0, 400, '' while length $payload;
-    my $n = @chunks - 1;
-    push @p,
-      $self->_write_p(sprintf "NOTICE %s %s\r\n",
-      $msg->{target}, $self->_make_ctcp_string(RTCZ => $type, "$_/$n", $dialog->name, $chunks[$_]))
-      for 0 .. $n;
-  };
-
-  if ($msg->{ice}) {
-    my $payload = Mojo::Parameters->new->param(ice => $msg->{ice});
-    $payload->param($_ => $msg->{$_}) for grep {/[a-z][A-Z]/} keys %$msg;
-    $write->(ICE => $payload->to_string);
-  }
-  elsif ($msg->{answer}) {
-    $write->(ANS => sdp_encode $msg->{answer});
-  }
-  elsif ($msg->{offer}) {
-    $write->(OFR => sdp_encode $msg->{offer});
-  }
-
-  return @p
-    ? Mojo::Promise->all(@p)->then(sub { +{} })
-    : Mojo::Promise->reject('Missing property: answer/ice/offer.');
 }
 
 sub send_p {
@@ -132,41 +84,6 @@ sub _connect_args {
   $self->{myinfo}{nick} = $params->param('nick');
 
   return $self->SUPER::_connect_args;
-}
-
-sub _irc_event_ctcpreply_rtcz {
-  my ($self, $msg) = @_;
-  my ($nick) = IRC::Utils::parse_user($msg->{prefix});
-
-  if ($msg->{params}[1] =~ m!^(ANS|ICE|OFR)\s(\d+)/(\d+)\s(\S+)\s(.+)!) {
-    my ($type, $i, $n, $dialog_name, $payload) = ($1, $2, $3, $4, $5);
-    return if $i > 20;    # Should never need this long message
-
-    $dialog_name = $nick if $self->_is_current_nick($dialog_name);
-    my $dialog    = $self->dialog({name => $dialog_name});
-    my $dialog_id = $dialog->id;
-
-    $dialog_name = $self->_is_current_nick($msg->{params}[0]) ? $nick : $msg->{params}[0];
-    $self->{rtc_signal_buf}{$dialog_id}{$type} = [] if $i == 0;
-    $self->{rtc_signal_buf}{$dialog_id}{$type}[$i] = $payload;
-    return if $i != $n;    # Waiting for more messages
-
-    $payload = gunzip b64_decode join '', @{$self->{rtc_signal_buf}{$dialog_id}{$type}};
-    delete $self->{rtc_signal_buf}{$dialog_id}{$type};
-
-    my $event
-      = $type eq 'ANS' ? {answer => sdp_decode $payload}
-      : $type eq 'OFR' ? {offer => sdp_decode $payload}
-      :                  Mojo::Parameters->new($payload)->to_hash;
-
-    $event->{from} = $nick;
-    $self->emit(rtc => signal => $dialog => $event);
-  }
-  elsif ($msg->{params}[1] =~ m!^(\w+)$!) {
-    my $dialog_name = $self->_is_current_nick($msg->{params}[0]) ? $nick : $msg->{params}[0];
-    my $dialog      = $self->dialog({name => $dialog_name});
-    $self->emit(rtc => lc $1, $dialog => {from => $nick});
-  }
 }
 
 sub _irc_event_ctcp_action {
@@ -1140,10 +1057,6 @@ See L<Convos::Core::Connection/connect>.
 =head2 disconnect_p
 
 See L<Convos::Core::Connection/disconnect_p>.
-
-=head2 rtc_p
-
-See L<Convos::Core::Connection/rtc_p>.
 
 =head2 send_p
 

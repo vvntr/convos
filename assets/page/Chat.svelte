@@ -17,7 +17,6 @@ import {renderMessages} from '../js/renderMessages';
 import {route} from '../store/Route';
 import {viewport} from '../store/Viewport';
 
-const rtc = getContext('rtc');
 const socket = getContext('socket');
 const user = getContext('user');
 
@@ -33,7 +32,6 @@ let unsubscribe = {};
 $: setDialogFromRoute($route);
 $: setDialogFromUser($user);
 $: messages = renderMessages({dialog: $dialog, expandUrlToMedia: $viewport.expandUrlToMedia, from: $connection.nick, waiting: Array.from($socket.waiting.values())});
-$: notConnected = $dialog.frozen ? true : false;
 $: if (!$route.hash && !$dialog.historyStopAt) dialog.load({});
 
 onMount(() => {
@@ -43,7 +41,6 @@ onMount(() => {
 onDestroy(() => {
   Object.keys(unsubscribe).forEach(name => unsubscribe[name]());
   dragAndDrop.detach();
-  rtc.hangup();
 });
 
 function onMessageClick(e) {
@@ -116,7 +113,6 @@ function setDialogFromUser(user) {
   unsubscribe.dialog = dialog.subscribe(d => { dialog = d });
   unsubscribe.setLastRead = dialog.setLastRead.bind(dialog);
   route.update({title: dialog.title});
-  rtc.hangup();
 
   onLoadHash = isISOTimeString(route.hash) && route.hash || '';
   if (onLoadHash) return dialog.load({around: onLoadHash});
@@ -127,13 +123,6 @@ function setDialogFromUser(user) {
 <ChatHeader>
   <h1><a href="#activeMenu:{dialog.connection_id ? 'settings' : 'nav'}" tabindex="-1">{l(dialog.name)}</a></h1>
   <span class="chat-header__topic">{topicOrStatus(connection, dialog)}</span>
-  {#if $rtc.enabled && $dialog.dialog_id}
-    {#if $rtc.localStream.id && $rtc.constraints.video}
-      <Button icon="video-slash" tooltip="{l('Hangup')}" disabled="{notConnected}" on:click="{e => rtc.hangup()}"/>
-    {:else}
-      <Button icon="video" tooltip="{l('Call')}" disabled="{notConnected}" on:click="{e => rtc.call(dialog, {audio: true, video: true})}"/>
-    {/if}
-  {/if}
   <a href="#activeMenu:{dialog.connection_id ? 'settings' : 'nav'}" class="btn has-tooltip can-toggle" class:is-toggled="{$route.activeMenu == 'settings'}" data-tooltip="{l('Settings')}"><Icon name="tools"/><Icon name="times"/></a>
 </ChatHeader>
 
