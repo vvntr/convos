@@ -1,6 +1,6 @@
 % layout 'convos';
 % title 'Better group chat';
-% stash start_app => 1;
+% stash start_js_app => 'chat';
 
 %= include 'partial/app_header'
 

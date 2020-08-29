@@ -1,16 +1,23 @@
 import './sass/convos.scss';
 import App from './App.svelte';
 import hljs from './js/hljs';
+import VideoApp from './VideoApp.svelte';
 import {q, tagNameIs} from './js/util';
 
 const body = document.querySelector('body');
 body.classList = body.className.replace(/no-js/, 'has-js');
 q(document, '#hamburger_checkbox_toggle', el => { el.checked = false });
 
-if (document.querySelector('meta[name="convos:start_app"][content="yes"]')) {
+if (document.querySelector('meta[name="convos:start"][content="chat"]')) {
   document.querySelector('.footer-wrapper').remove();
   document.querySelector('main').remove();
   const app = new App({target: document.body});
+}
+else if (document.querySelector('meta[name="convos:start"][content="video"]')) {
+  document.querySelector('main').remove();
+  const footer = document.querySelector('.footer-wrapper');
+  const app = new VideoApp({target: document.body});
+  document.body.appendChild(footer);
 }
 else {
   document.addEventListener('DOMContentLoaded', function(e) {

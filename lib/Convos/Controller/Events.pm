@@ -99,6 +99,7 @@ sub _event_send {
     $res->{$_} ||= $data->{$_} for keys %$data;
     $self->send({json => $res});
   })->catch(sub {
+    $self->log->warn("[ws:send] ERR @_");
     $self->_err(shift, $data);
   });
 }

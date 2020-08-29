@@ -24,11 +24,9 @@ export default class WebRTC extends Reactive {
 
     this.prop('ro', 'enabled', () => !!(this.peerConfig.ice_servers || []).length);
 
-    this.prop('rw', 'dialog', null);
+    this.prop('rw', 'constraints', {audio: true, video: true});
     this.prop('rw', 'localStream', {id: ''});
     this.prop('rw', 'peerConfig', {});
-
-    this.prop('persist', 'constraints', {audio: true, video: true});
 
     this.prop('rw', 'cameras', []);
     this.prop('rw', 'microphones', []);
@@ -50,14 +48,13 @@ export default class WebRTC extends Reactive {
     window.addEventListener('beforeunload', this.hangup);
   }
 
-  async call(dialog, constraints) {
+  allActiveStreams() {
+    return !this.localStream.id ? [] : [this.localStream].concat(this.peerConnections({remoteStream: true}));
+  }
+
+  async call() {
     if (this.localStream.id) await this.hangup();
-    if (!constraints) constraints = this.constraints;
-
-    this.unsubscribe.dialogRtc = dialog.on('rtc', msg => this._onSignal(msg));
-    this.update({constraints, dialog});
-
-    const localStream = await navigator.mediaDevices.getUserMedia(constraints);
+    const localStream = await navigator.mediaDevices.getUserMedia(this.constraints);
     this.update({localStream});
     this._send('call', {});
     this._getDevices();
@@ -136,7 +133,7 @@ export default class WebRTC extends Reactive {
   }
 
   _mapPc(cb) {
-    return Object.keys(this.connections).map(target => cb(this.connections[target]));
+    return Object.keys(this.connections).sort().map(target => cb(this.connections[target]));
   }
 
   _normalizedPeerConfig() {
@@ -159,6 +156,6 @@ export default class WebRTC extends Reactive {
   }
 
   _send(event, msg) {
-    if (this.dialog) this.dialog.send({...msg, method: 'rtc', event});
+    console.log('send:', event, msg);
   }
 }

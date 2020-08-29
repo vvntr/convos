@@ -1,0 +1,20 @@
+% layout 'convos';
+% title l('Video chat with %1', $chat->name);
+% stash start_js_app => 'video';
+
+% social description => l 'Video chat with %1. Do you want to join the conversation?', $chat->name;
+%# social image => $file->public_url(1) if $file->mime_type =~ m!^image!;
+
+%= include 'partial/app_header'
+
+<main class="convos-video-chat" data-name="<%= $chat->name %>">
+  <h1><%=l 'Video chat with %1', $chat->name %></h1>
+  <p><i class="fas fa-spinner fa-spin"></i> <%=l 'Starting video chat...' %></p>
+  <div>
+    %= link_to settings('contact'), class => 'btn', begin
+      <i class="fas fa-paper-plane"></i> <%=l 'Contact admin' %>
+    % end
+  </div>
+</main>
+
+%= include 'partial/app_footer'

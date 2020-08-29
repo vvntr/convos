@@ -1,5 +1,6 @@
 <script>
 import autocomplete from '../js/autocomplete';
+import Button from '../components/form/Button.svelte';
 import Icon from '../components/Icon.svelte';
 import {getContext} from 'svelte';
 import {extractErrorMessage} from '../js/util';

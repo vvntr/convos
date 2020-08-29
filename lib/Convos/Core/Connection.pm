@@ -7,7 +7,7 @@ use Mojo::JSON qw(false true);
 use Mojo::Loader 'load_class';
 use Mojo::Promise;
 use Mojo::URL;
-use Mojo::Util qw(term_escape url_escape);
+use Mojo::Util qw(term_escape);
 use Unicode::UTF8;
 
 $IO::Socket::SSL::DEBUG = $ENV{CONVOS_TLS_DEBUG} if $ENV{CONVOS_TLS_DEBUG};

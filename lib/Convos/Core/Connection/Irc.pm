@@ -2,7 +2,7 @@ package Convos::Core::Connection::Irc;
 use Mojo::Base 'Convos::Core::Connection';
 
 no warnings 'utf8';
-use Convos::Util qw($CHANNEL_RE DEBUG);
+use Convos::Util qw($CHANNEL_RE DEBUG short_checksum);
 use IRC::Utils ();
 use Mojo::JSON qw(false true);
 use Mojo::Parameters;
@@ -47,21 +47,22 @@ sub send_p {
 
   return $self->_send_message_p($target, "\x{1}ACTION $message\x{1}") if $cmd eq 'ME';
   return $self->_send_message_p($target, $message)                    if $cmd eq 'SAY';
+
   return $self->_send_message_p(split /\s+/, $message, 2) if $cmd eq 'MSG';
+  return $self->_send_clear_p(split /\s+/, $message)      if $cmd eq 'CLEAR';
 
-  return $self->_send_clear_p(split /\s+/, $message) if $cmd eq 'CLEAR';
-  return $self->_send_query_p($message)              if $cmd eq 'QUERY';
-  return $self->_send_join_p($message)               if $cmd eq 'JOIN';
-  return $self->_send_list_p($message)               if $cmd eq 'LIST';
-  return $self->_send_nick_p($message)               if $cmd eq 'NICK';
-  return $self->_send_whois_p($message)              if $cmd eq 'WHOIS';
-
-  return $self->_send_names_p($target) if $cmd eq 'NAMES';
+  return $self->_send_query_p($message) if $cmd eq 'QUERY';
+  return $self->_send_join_p($message)  if $cmd eq 'JOIN';
+  return $self->_send_list_p($message)  if $cmd eq 'LIST';
+  return $self->_send_names_p($target)  if $cmd eq 'NAMES';
+  return $self->_send_nick_p($message)  if $cmd eq 'NICK';
+  return $self->_send_whois_p($message) if $cmd eq 'WHOIS';
 
   return $self->_send_kick_p($target, $message)  if $cmd eq 'KICK';
   return $self->_send_mode_p($target, $message)  if $cmd eq 'MODE';
   return $self->_send_oper_p($target, $message)  if $cmd eq 'OPER';
   return $self->_send_topic_p($target, $message) if $cmd eq 'TOPIC';
+  return $self->_send_video_p($target, $message) if $cmd eq 'VIDEO';
 
   return $self->_send_ison_p($message || $target) if $cmd eq 'ISON';
   return $self->_send_part_p($message || $target) if $cmd eq 'CLOSE' or $cmd eq 'PART';
@@ -860,6 +861,16 @@ sub _send_topic_p {
     topic                => {0 => $target},
     '_make_topic_response',
   );
+}
+
+sub _send_video_p {
+  my ($self, $target, $name) = @_;
+
+  my $invalid_target_p = $self->_make_invalid_target_p(\$target);
+  return $invalid_target_p if $invalid_target_p;
+
+  return $self->user->core->backend->emit_to_class_p(message_to_video => $self, $target, $name)
+    ->then(sub { $self->_send_message_p($target, shift->to_message) });
 }
 
 sub _send_whois_p {
