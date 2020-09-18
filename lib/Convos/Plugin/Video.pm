@@ -20,6 +20,8 @@ sub _render {
   my ($self, $c) = @_;
   return $self->_events($c) if $c->tx->is_websocket;
 
+  $c->res->headers->header('X-Provider-Name', 'ConvosVideo');
+
   my $dialog = Convos::Plugin::Video::Dialog->new(core => $c->app->core, id => $c->stash('vid'));
   return $dialog->load_p->then(sub {
     return $c->reply->not_found unless eval { $dialog->name };    # invalid vid

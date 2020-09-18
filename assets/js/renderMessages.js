@@ -43,12 +43,14 @@ async function loadEmbed(url) {
   const embed = op.res.body;
 
   if (!embed.html) embed.html = '';
-  embed.className = embed.provider_name ? 'for-' + embed.provider_name.toLowerCase() : embed.html ? 'for-unknown' : 'hidden';
+  if (!embed.provider_name) embed.provider_name = 'unknown';
+  embed.className = !embed.html ? 'hidden' : 'for-' + embed.provider_name.toLowerCase();
 
   const embedEl = document.createRange().createContextualFragment(embed.html).firstChild;
   q(embedEl, 'img', [['error', (e) => (e.target.style.display = 'none')]]);
   const types = (embedEl && embedEl.className || '').split(/\s+/);
   if (types.indexOf('le-paste') != -1) renderPaste(embed, embedEl);
+  if (embed.provider_name == 'ConvosVideo') renderVideo(embed, embedEl);
 
   return embed;
 }
@@ -89,6 +91,16 @@ function renderPaste(embed, embedEl) {
   const pre = embedEl.querySelector('pre');
   if (!pre) return;
   hljs.lineNumbersBlock(pre);
+  embed.html = embedEl.outerHTML;
+}
+
+function renderVideo(embed, embedEl) {
+  q(embedEl, '.le-thumbnail', thumbEl => {
+    thumbEl.className = 'for-yes';
+    thumbEl.innerHTML = 'Yes';
+    q(embedEl, '.le-description', pEl => pEl.appendChild(thumbEl));
+  });
+
   embed.html = embedEl.outerHTML;
 }
 

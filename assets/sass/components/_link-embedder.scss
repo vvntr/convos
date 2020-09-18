@@ -49,6 +49,22 @@
   }
 }
 
+.le-card.le-provider-convosvideo {
+  h3:after {
+    @extend .fas;
+    content: fa-content($fa-var-video);
+    color: var(--link-color);
+    font-size: 2rem;
+    padding-right: 1rem;
+    float: left;
+    cursor: pointer;
+  }
+
+  .for-yes {
+    padding-left: 0.3rem;
+  }
+}
+
 .le-card.le-provider-convosapp {
   h3,
   p {
